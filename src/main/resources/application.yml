@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5433/keygate
+    url: jdbc:postgresql://localhost:5434/keygate
     username: postgres
     password: postgres
   jpa:
