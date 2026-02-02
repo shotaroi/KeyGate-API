@@ -34,12 +34,16 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        // Allow public endpoints without key
         String path = request.getRequestURI();
-        if (path.startsWith("/public") || path.startsWith("/clients")) {
+
+// Public endpoints that should NOT require X-API-KEY
+        if (path.startsWith("/public")
+                || path.startsWith("/clients")
+                || path.startsWith("/actuator")) {
             filterChain.doFilter(request, response);
             return;
         }
+
 
         String rawKey = request.getHeader("X-API-KEY");
         if (rawKey == null || rawKey.isBlank()) {
