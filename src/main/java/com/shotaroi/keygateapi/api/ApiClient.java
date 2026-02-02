@@ -41,12 +41,32 @@ public class ApiClient {
         return apiKeyHash;
     }
 
+    public void setApiKeyHash(String apiKeyHash) {
+        this.apiKeyHash = apiKeyHash;
+    }
+
     public int getRequestsPerMinute() {
         return requestsPerMinute;
     }
 
+    public void setRequestsPerMinute(int requestsPerMinute) {
+        this.requestsPerMinute = requestsPerMinute;
+    }
+
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
 }
