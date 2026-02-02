@@ -61,14 +61,39 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
         boolean allowed = rateLimiter.allowRequest(client.getApiKeyHash(), client.getRequestsPerMinute());
         if (!allowed) {
+            long retryAfterSeconds = secondsUntilNextMinute();
+
+            response.resetBuffer(); // VERY IMPORTANT
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+            response.setHeader("Retry-After", String.valueOf(retryAfterSeconds));
+            response.setContentType("application/json");
+
+            response.getWriter().write(
+                    "{\"error\":\"rate_limited\",\"retryAfterSeconds\":" + retryAfterSeconds + "}"
+            );
+
+            response.flushBuffer(); // FORCE send headers + body
             return;
         }
+        
+        var principal = new ApiPrincipal(
+                client.getName(),
+                client.getApiKeyHash(),
+                client.getRequestsPerMinute()
+        );
 
-        // Mark request as authenticated (simple role)
-        var auth = new UsernamePasswordAuthenticationToken(client.getName(), null, List.of());
+        var auth = new UsernamePasswordAuthenticationToken(principal, null, List.of());
         SecurityContextHolder.getContext().setAuthentication(auth);
+
 
         filterChain.doFilter(request, response);
     }
+
+    private long secondsUntilNextMinute() {
+        long now = java.time.Instant.now().getEpochSecond();
+        long secondsPassedThisMinute = now % 60;
+        long left = 60 - secondsPassedThisMinute;
+        return (left == 0) ? 60 : left;
+    }
+
 }
