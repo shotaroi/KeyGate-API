@@ -8,7 +8,8 @@ import java.time.Instant;
 @Entity
 @Table(name = "api_clients")
 @Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class ApiClient {
 
@@ -35,4 +36,17 @@ public class ApiClient {
     void onCreate() {
         createdAt = Instant.now();
     }
+
+    public String getApiKeyHash() {
+        return apiKeyHash;
+    }
+
+    public int getRequestsPerMinute() {
+        return requestsPerMinute;
+    }
+
+    public String getName() {
+        return name;
+    }
+
 }
