@@ -38,11 +38,18 @@ public class ApiClientController {
         String rawKey = keyService.generateRawKey();
         String hash = hasher.sha256(rawKey);
 
-        ApiClient saved = repo.save(ApiClient.builder()
-                .name(req.name())
-                .requestsPerMinute(req.requestsPerMinute())
-                .apiKeyHash(hash)
-                .build());
+//        ApiClient saved = repo.save(ApiClient.builder()
+//                .name(req.name())
+//                .requestsPerMinute(req.requestsPerMinute())
+//                .apiKeyHash(hash)
+//                .build());
+        ApiClient client = new ApiClient();
+        client.setName(req.name());
+        client.setRequestsPerMinute(req.requestsPerMinute());
+        client.setApiKeyHash(hash);
+
+        ApiClient saved = repo.save(client);
+
 
         return new CreateClientResponse(saved.getId(), saved.getName(), saved.getRequestsPerMinute(), rawKey);
     }
