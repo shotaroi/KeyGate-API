@@ -3,6 +3,7 @@ package com.shotaroi.keygateapi.ratelimit;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
@@ -15,18 +16,47 @@ public class RedisRateLimiter {
         this.redis = redis;
     }
 
+    public long currentUsed(String apiKeyHash) {
+        long minuteBucket = currentMinuteBucket();
+        String key = keyFor(apiKeyHash, minuteBucket);
+
+        String value = redis.opsForValue().get(key);
+        if (value == null) return 0;
+
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    public long secondsUntilReset() {
+        long now = Instant.now().getEpochSecond();
+        long passed = now % 60;
+        long left = 60 - passed;
+        return (left == 0) ? 60 : left;
+    }
+
+    private long currentMinuteBucket() {
+        return Instant.now().truncatedTo(ChronoUnit.MINUTES).getEpochSecond();
+    }
+
+    private String keyFor(String apiKeyHash, long minuteBucket) {
+        return "rl:" + apiKeyHash + ":" + minuteBucket;
+    }
+
+
     public boolean allowRequest(String apiKeyHash, int limitPerMinute) {
-        // Example key: rl:<hash>:<minute>
-        long minuteBucket = Instant.now().truncatedTo(ChronoUnit.MINUTES).getEpochSecond();
-        String key = "rl:" + apiKeyHash + ":" + minuteBucket;
+        long minuteBucket = currentMinuteBucket();
+        String key = keyFor(apiKeyHash, minuteBucket);
 
         Long count = redis.opsForValue().increment(key);
 
-        // Set the key to expire after 70 seconds so Redis cleans it up
         if (count != null && count == 1) {
-            redis.expire(key, java.time.Duration.ofSeconds(70));
+            redis.expire(key, Duration.ofSeconds(70));
         }
 
         return count != null && count <= limitPerMinute;
     }
+
 }
