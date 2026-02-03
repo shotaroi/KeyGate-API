@@ -4,6 +4,7 @@ import com.shotaroi.keygateapi.api.ApiClient;
 import com.shotaroi.keygateapi.api.ApiClientRepository;
 import com.shotaroi.keygateapi.errors.ApiError;
 import com.shotaroi.keygateapi.ratelimit.RedisRateLimiter;
+import com.shotaroi.keygateapi.trace.RequestIdFilter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -135,6 +136,14 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
                                String error,
                                String message,
                                Map<String, Object> details) throws IOException {
+        String requestId = (String) request.getAttribute(RequestIdFilter.ATTR);
+
+        Map<String, Object> merged = new java.util.HashMap<>(details);
+        if (requestId != null) {
+            merged.put("requestId", requestId);
+            // ensure header is always present even if something weird happens
+            response.setHeader(RequestIdFilter.HEADER, requestId);
+        }
 
         ApiError body = new ApiError(
                 Instant.now(),
@@ -142,7 +151,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
                 error,
                 message,
                 request.getRequestURI(),
-                details
+                merged
         );
 
         response.resetBuffer();
