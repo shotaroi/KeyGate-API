@@ -61,21 +61,32 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
         boolean allowed = rateLimiter.allowRequest(client.getApiKeyHash(), client.getRequestsPerMinute());
         if (!allowed) {
-            long retryAfterSeconds = secondsUntilNextMinute();
+            long resetSeconds = rateLimiter.secondsUntilReset();
+            int limit = client.getRequestsPerMinute();
 
-            response.resetBuffer(); // VERY IMPORTANT
+            // Since allowRequest() incremented and we exceeded, used will be > limit
+            long used = rateLimiter.currentUsed(client.getApiKeyHash());
+            long remaining = 0;
+
+            response.resetBuffer();
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-            response.setHeader("Retry-After", String.valueOf(retryAfterSeconds));
+
+            response.setHeader("Retry-After", String.valueOf(resetSeconds));
+            response.setHeader("X-RateLimit-Limit", String.valueOf(limit));
+            response.setHeader("X-RateLimit-Remaining", String.valueOf(remaining));
+            response.setHeader("X-RateLimit-Reset", String.valueOf(resetSeconds));
+
             response.setContentType("application/json");
-
             response.getWriter().write(
-                    "{\"error\":\"rate_limited\",\"retryAfterSeconds\":" + retryAfterSeconds + "}"
+                    "{\"error\":\"rate_limited\",\"retryAfterSeconds\":" + resetSeconds +
+                            ",\"limitPerMinute\":" + limit +
+                            ",\"usedThisMinute\":" + used + "}"
             );
-
-            response.flushBuffer(); // FORCE send headers + body
+            response.flushBuffer();
             return;
         }
-        
+
+
         var principal = new ApiPrincipal(
                 client.getName(),
                 client.getApiKeyHash(),
