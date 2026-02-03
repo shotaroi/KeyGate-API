@@ -2,6 +2,7 @@ package com.shotaroi.keygateapi.api;
 
 import com.shotaroi.keygateapi.security.ApiKeyHasher;
 import com.shotaroi.keygateapi.security.ApiKeyService;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -34,7 +35,7 @@ public class ApiClientController {
     ) {}
 
     @PostMapping
-    public CreateClientResponse create(@RequestBody CreateClientRequest req) {
+    public CreateClientResponse create(@Valid @RequestBody CreateClientRequest req) {
         String rawKey = keyService.generateRawKey();
         String hash = hasher.sha256(rawKey);
 
