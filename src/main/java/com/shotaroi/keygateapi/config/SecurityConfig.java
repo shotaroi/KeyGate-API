@@ -1,6 +1,7 @@
 package com.shotaroi.keygateapi.config;
 
 import com.shotaroi.keygateapi.security.ApiKeyAuthFilter;
+import com.shotaroi.keygateapi.trace.RequestIdFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,9 +13,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final ApiKeyAuthFilter apiKeyAuthFilter;
+    private final RequestIdFilter requestIdFilter;
 
-    public SecurityConfig(ApiKeyAuthFilter apiKeyAuthFilter) {
+    public SecurityConfig(ApiKeyAuthFilter apiKeyAuthFilter, RequestIdFilter requestIdFilter) {
         this.apiKeyAuthFilter = apiKeyAuthFilter;
+        this.requestIdFilter = requestIdFilter;
     }
 
     @Bean
@@ -28,6 +31,7 @@ public class SecurityConfig {
                         .requestMatchers("/public/**").permitAll()
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(requestIdFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(apiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .httpBasic(basic -> basic.disable())      // disable default basic auth
                 .formLogin(form -> form.disable())        // disable login page
