@@ -1,5 +1,6 @@
 package com.shotaroi.keygateapi.errors;
 
+import com.shotaroi.keygateapi.trace.RequestIdFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -60,13 +61,19 @@ public class GlobalExceptionHandler {
                                            String message,
                                            HttpServletRequest req,
                                            Map<String, Object> details) {
+        Map<String, Object> merged = new HashMap<>(details);
+        Object requestId = req.getAttribute(RequestIdFilter.ATTR);
+        if (requestId != null) {
+            merged.put("requestId", requestId.toString());
+        }
+
         ApiError body = new ApiError(
                 Instant.now(),
                 status.value(),
                 error,
                 message,
                 req.getRequestURI(),
-                details
+                merged
         );
         return ResponseEntity.status(status).body(body);
     }
