@@ -60,21 +60,22 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
         }
 
         boolean allowed = rateLimiter.allowRequest(client.getApiKeyHash(), client.getRequestsPerMinute());
+
+        long resetSeconds = rateLimiter.secondsUntilReset();
+        int limit = client.getRequestsPerMinute();
+
+        // Since allowRequest() incremented and we exceeded, used will be > limit
+        long used = rateLimiter.currentUsed(client.getApiKeyHash());
+        long remaining = 0;
+        response.setHeader("X-RateLimit-Limit", String.valueOf(limit));
+        response.setHeader("X-RateLimit-Remaining", String.valueOf(remaining));
+        response.setHeader("X-RateLimit-Reset", String.valueOf(resetSeconds));
+
         if (!allowed) {
-            long resetSeconds = rateLimiter.secondsUntilReset();
-            int limit = client.getRequestsPerMinute();
-
-            // Since allowRequest() incremented and we exceeded, used will be > limit
-            long used = rateLimiter.currentUsed(client.getApiKeyHash());
-            long remaining = 0;
-
             response.resetBuffer();
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
 
             response.setHeader("Retry-After", String.valueOf(resetSeconds));
-            response.setHeader("X-RateLimit-Limit", String.valueOf(limit));
-            response.setHeader("X-RateLimit-Remaining", String.valueOf(remaining));
-            response.setHeader("X-RateLimit-Reset", String.valueOf(resetSeconds));
 
             response.setContentType("application/json");
             response.getWriter().write(
